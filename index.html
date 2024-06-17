@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Meter - Cálculo do Custo de Reunião</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Calibri, Arial, Helvetica, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #131212;
+            margin: 0;
+            font-size: large;
+        }
+
+        .container {
+            background: #333;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 60%;
+            color: #efefef;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            margin-right: 10px;
+        }
+
+        .input-group input {
+            padding: 5px;
+            width: 100px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        #costDisplay {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+
+        #timeDisplay {
+            margin-top: 10px;
+            font-size: 16px;
+        }
+
+        #log {
+            margin-top: 20px;
+            width: 90%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            overflow-y: scroll;
+            text-align: left;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="input-group">
+            <img src="meeting-meter.png" alt="Meeting Meter" width="100px" height="100px">
+            <h1>Meeting Meter</h1>
+            <label for="hourlyRate">Valor da hora (R$):</label>
+            <input type="number" id="hourlyRate" min="0" step="0.01" focusable>
+        </div>
+        <button id="startPauseBtn"><i class="fas fa-play"></i> Iniciar</button>
+        <button id="endMeetingBtn" disabled><i class="fas fa-stop"></i> Finalizar reunião</button>
+        <button id="resetBtn" onclick="resetMeeting()" disabled><i class="fas fa-sync-alt"></i> Reset</button>
+        <div id="costDisplay">Custo da reunião: R$ 0.00</div>
+        <div id="timeDisplay">Tempo acumulado: 0h 0m 0s</div>
+
+        <textarea id="log" readonly></textarea>
+    </div>
+
+    <script>
+        let isRunning = false;
+        let startTime;
+        let accumulatedTime = 0;
+        let interval;
+
+        const hourlyRateInput = document.getElementById('hourlyRate');
+        const startPauseBtn = document.getElementById('startPauseBtn');
+        const endMeetingBtn = document.getElementById('endMeetingBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const costDisplay = document.getElementById('costDisplay');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const log = document.getElementById('log');
+        const iniciarTexto = '<i class="fas fa-play"></i> Iniciar';
+        const pausarTexto = '<i class="fas fa-pause"></i> Pausar';
+        const encessarTexto = '<i class="fas fa-stop"></i> Finalizar reunião';
+        const resetarTexto = '<i class="fas fa-sync-alt"></i> Reset';
+        const retomarTexto = '<i class="fas fa-play"></i> Retomar';
+
+        startPauseBtn.addEventListener('click', () => {
+            if (!isRunning) {
+                startMeeting();
+            } else {
+                pauseMeeting();
+            }
+        });
+
+        endMeetingBtn.addEventListener('click', endMeeting);
+
+        function startMeeting() {
+            if (!hourlyRateInput.value) {
+                alert('Por favor, informe o valor da hora.');
+                hourlyRateInput.focus();
+                return;
+            }
+            startTime = Date.now() - accumulatedTime;
+            interval = setInterval(updateCost, 100);
+            startPauseBtn.innerHTML = pausarTexto;
+            isRunning = true;
+            endMeetingBtn.disabled = false;
+            resetBtn.disabled = true; // Desabilitando o botão Reset
+            logEvent('Reunião iniciada');
+        }
+
+        function pauseMeeting() {
+            clearInterval(interval);
+            accumulatedTime = Date.now() - startTime;
+            startPauseBtn.innerHTML = retomarTexto;
+            isRunning = false;
+            endMeetingBtn.disabled = false;
+            resetBtn.disabled = true; // Desabilitando o botão Reset
+            logEvent('Reunião pausada');
+        }
+
+        function endMeeting() {
+            clearInterval(interval);
+            const elapsedTime = Date.now() - startTime + accumulatedTime;
+            const hours = elapsedTime / (1000 * 60 * 60);
+            const hourlyRate = parseFloat(hourlyRateInput.value) || 0;
+            const finalCost = hours * hourlyRate;
+
+            logEvent(`Reunião finalizada. Custo total: R$ ${finalCost.toFixed(2)}`);
+            logEvent(`Tempo total da reunião: ${Math.floor(hours)}h ${Math.floor((elapsedTime / (1000 * 60)) % 60)}m ${Math.floor((elapsedTime / 1000) % 60)}s`);
+            alert(`Reunião finalizada. Custo total: R$ ${finalCost.toFixed(2)}`);
+
+            clearInterval(interval);
+            accumulatedTime = 0;
+            isRunning = false;
+            startPauseBtn.innerHTML = iniciarTexto;
+            costDisplay.textContent = 'Custo da reunião: R$ 0.00';
+            timeDisplay.textContent = 'Tempo acumulado: 0h 0m 0s';
+            endMeetingBtn.disabled = true;
+            resetBtn.disabled = false; // Habilitando o botão Reset quando a reunião termina
+        }
+
+        function resetMeeting() {
+            hourlyRateInput.value = '';
+            log.value = '';
+            endMeetingBtn.disabled = true;
+            resetBtn.disabled = true;
+            startPauseBtn.innerHTML = iniciarTexto;
+            costDisplay.textContent = 'Custo da reunião: R$ 0.00';
+            timeDisplay.textContent = 'Tempo acumulado: 0h 0m 0s';
+            endMeetingBtn.disabled = true;
+            resetBtn.disabled = false; // Habilitando o botão Reset quando a reunião termina
+            hourlyRateInput.focus();
+        }
+
+        function updateCost() {
+            const elapsedTime = Date.now() - startTime;
+            const totalElapsedTime = elapsedTime + accumulatedTime;
+            const hours = totalElapsedTime / (1000 * 60 * 60);
+            const hourlyRate = parseFloat(hourlyRateInput.value) || 0;
+            const cost = hours * hourlyRate;
+
+            costDisplay.textContent = `Custo da reunião: R$ ${cost.toFixed(2)}`;
+
+            const seconds = Math.floor((totalElapsedTime / 1000) % 60);
+            const minutes = Math.floor((totalElapsedTime / (1000 * 60)) % 60);
+            const totalHours = Math.floor(totalElapsedTime / (1000 * 60 * 60));
+
+            timeDisplay.textContent = `Tempo acumulado: ${totalHours}h ${minutes}m ${seconds}s`;
+        }
+
+        function logEvent(message) {
+            const now = new Date();
+            const timestamp = now.toLocaleString('pt-BR');
+            log.value += `${timestamp}: ${message}\n`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // PWA Service Worker registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registrado com sucesso:', registration);
+                    })
+                    .catch(error => {
+                        console.error('Falha ao registrar o Service Worker:', error);
+                    });
+            });
+        }
+
+        window.addEventListener('load', () => {
+            hourlyRateInput.focus();
+        });
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,20 @@
+{
+    "name": "Cálculo do Custo de Reunião",
+    "short_name": "Meeting Meter",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "description": "Uma ferramenta para calcular o custo de reuniões",
+    "icons": [
+        {
+            "src": "icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
